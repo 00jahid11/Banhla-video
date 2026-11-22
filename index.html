@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="bn"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bangladesh Cinematic Motion Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090f;--c:#121826;--a:#f5a623;--t:#e8ecf5;--m:#8b94a8}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--t);font:14px "Hind Siliguri",sans-serif;display:flex;flex-direction:column}
+#top{padding:6px;text-align:center;background:#000}
+canvas#cv{max-width:100%;max-height:38vh;border-radius:6px;box-shadow:0 0 30px #0008}
+#bar{display:flex;gap:8px;align-items:center;padding:4px 10px}#bar input{flex:1}#tm{color:var(--m);min-width:76px;text-align:right}
+#tlw{overflow-x:auto;background:var(--c);padding:6px 8px;border-top:1px solid #222a40}
+#tin{position:relative;min-width:100%}#ph{position:absolute;top:0;bottom:0;width:2px;background:#ef4444;z-index:5;pointer-events:none}
+#row{display:flex}.bl{border:2px solid #2a3350;border-radius:6px;overflow:hidden;background:#000;font-size:11px;white-space:nowrap}
+.bl.on{border-color:var(--a)}.bl canvas{width:100%;height:58px;object-fit:cover;display:block}.bl span{display:block;padding:1px 4px;overflow:hidden}
+.trk{height:16px;margin-top:3px;border-radius:4px;font-size:10px;padding:0 4px;color:#fff;overflow:hidden;white-space:nowrap}
+main{flex:1;overflow:auto;padding:8px}.pn{display:none}.pn.on{display:block}
+nav{display:flex;background:var(--c);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:var(--m);padding:10px 2px;font:inherit}nav button.on{color:var(--a);border-top:2px solid var(--a)}
+.cd{background:var(--c);border-radius:12px;padding:10px;margin-bottom:8px}h3{margin:0 0 6px;font-size:14px;color:var(--a)}
+label{display:block;margin:7px 0 2px;color:var(--m);font-size:12px}
+input,select,textarea,button{font:inherit}
+input[type=text],input[type=number],select,textarea{width:100%;background:#07090f;color:var(--t);border:1px solid #2a3350;border-radius:8px;padding:9px}
+.b{background:var(--a);color:#111;border:0;border-radius:10px;padding:11px 13px;font-weight:700;margin:4px 4px 0 0}.b.g{background:#2a3350;color:var(--t)}
+.n{color:var(--m);font-size:12px;margin-top:6px}#err{color:#fca5a5}input[type=range]{width:100%}
+#pgw{height:10px;background:#2a3350;border-radius:6px;overflow:hidden;margin:8px 0}#pg{height:100%;width:0;background:var(--a)}
+#stg{list-style:none;padding:0;margin:8px 0 0}#stg li{padding:4px 0;font-size:13px}</style><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script></head><body>
+<div id="top"><canvas id="cv"></canvas></div>
+<div id="bar"><button class="b" id="pl" onclick="togglePlay()">▶</button><input type="range" id="sk" min="0" max="30" step="0.05" value="0" oninput="seekT(+this.value)"><span id="tm">0/0</span></div>
+<div id="tlw"><div id="tin"></div></div>
+<main>
+<section class="pn" id="p0">
+<div class="cd"><h3>Story → storyboard</h3>
+<input type="text" id="topic" placeholder="Story idea / video topic">
+<button class="b" onclick="gen()">Generate 6-scene storyboard</button><button class="b g" onclick="demo()">Bangladesh demo (30s)</button>
+<div class="n">Storyboard generation is a built-in template (no AI, no API): it assigns the 6 animated scene types and Bengali placeholder text around your idea. Edit every line in the Scene tab.</div></div>
+<div class="cd"><h3>Project</h3><button class="b" onclick="saveP()">Save locally</button><button class="b g" onclick="loadP()">Load saved</button>
+<div class="n">Saves scenes and settings in this browser. Audio files are not saved; re-add them after loading.</div></div>
+</section>
+<section class="pn" id="p1"><div class="cd">
+<div class="n" id="sn"></div>
+<label>Title</label><input type="text" id="f_t" oninput="ed('t',this.value)">
+<label>Narration / subtitle</label><textarea id="f_n" rows="3" oninput="ed('n',this.value)"></textarea>
+<label>Duration (s)</label><input type="number" id="f_d" min="1" step="0.5" oninput="ed('d',this.value)">
+<label>Scene animation</label><select id="f_p" onchange="ed('p',this.value)"><option value="aerial">Aerial map</option><option value="country">Countryside + river</option><option value="village">Village life</option><option value="city">City traffic + skyline</option><option value="bridge">Bridge reveal</option><option value="title">Title reveal</option><option value="info">Infographic</option><option value="history">Historical reconstruction</option><option value="threed">Real-time 3D (Three.js)</option></select>
+<label>Color grade</label><input type="color" id="f_c" oninput="ed('c',this.value)">
+<label>Camera movement (0–2)</label><input type="range" id="f_cam" min="0" max="2" step="0.1" oninput="ed('cam',+this.value)">
+<label>Particles / FX density (0–2)</label><input type="range" id="f_fx" min="0" max="2" step="0.1" oninput="ed('fx',+this.value)">
+<label>Camera mode</label><select id="f_cm" onchange="ed('cm',this.value)"><option value="zoom">Zoom</option><option value="pan">Pan</option><option value="track">Track</option></select><label>English subtitle</label><input type="text" id="f_en" oninput="ed('en',this.value)"><label>Transition</label><select id="tr" onchange="S.tr=this.value;seekT(cur)"><option value="flash">Light flash</option><option value="fade">Dip to black</option><option value="wipe">Wipe</option></select>
+<label><input type="checkbox" id="f_td" checked onchange="ed('td',this.checked)"> 3D-style title</label>
+<button class="b g" onclick="addS()">+ Scene</button><button class="b g" onclick="mvS()">← Move</button><button class="b g" onclick="delS()">Delete</button>
+</div></section>
+<section class="pn" id="p2">
+<div class="cd"><h3>Voiceover</h3><button class="b" id="rec" onclick="recT()">🎙 Record</button>
+<input type="file" accept="audio/*,.mp3,.wav,.m4a" onchange="ld('v',this.files[0])" style="margin-top:8px"><audio id="va" controls style="width:100%;margin-top:6px"></audio><div class="n" id="vi">No voice</div>
+<label>Trim start (s)</label><input type="number" value="0" min="0" step="0.1" oninput="O.v.t0=+this.value;thumbs()">
+<label>Trim end (s, 0 = full)</label><input type="number" value="0" min="0" step="0.1" oninput="O.v.t1=+this.value;thumbs()">
+<label>Start delay in video (s)</label><input type="number" value="0" min="0" step="0.1" oninput="O.v.off=+this.value;thumbs()">
+<label>Volume</label><input type="range" min="0" max="2" step="0.05" value="1" oninput="O.v.vol=+this.value">
+<button class="b g" onclick="fit()">Fit scene durations to voice length</button></div>
+<div class="cd"><h3>AI voice (TTSMaker)</h3><div class="n">Open <a style="color:var(--a)" target="_blank" href="https://ttsmaker.com">ttsmaker.com</a>, choose Bengali + male/female voice, paste the narration, download the MP3 and upload it above. This app does not generate speech itself.</div><button class="b g" onclick="copyN()">Copy all narration</button></div>
+<div class="cd"><h3>Music</h3><input type="file" accept="audio/*" onchange="ld('m',this.files[0])">
+<label><input type="checkbox" checked onchange="O.m.synth=this.checked"> Built-in synth pad when no file</label>
+<label>Volume</label><input type="range" min="0" max="1" step="0.05" value="0.35" oninput="O.m.vol=+this.value">
+<label>Fade in (s)</label><input type="number" value="1.5" min="0" step="0.5" oninput="O.m.fi=+this.value"><label>Fade out (s)</label><input type="number" value="2" min="0" step="0.5" oninput="O.m.fo=+this.value"><div class="n" id="mi"></div></div>
+<div class="cd"><h3>Sound effects</h3><label><input type="checkbox" checked onchange="O.x.w=this.checked"> Whoosh at each scene start</label><input type="file" accept="audio/*" onchange="ld('x',this.files[0])"><label>Volume</label><input type="range" min="0" max="1" step="0.05" value="0.6" oninput="O.x.vol=+this.value"><div class="n" id="xi"></div></div>
+<button class="b" onclick="play([AC.destination])">▶ Preview all audio + video</button>
+</section>
+<section class="pn" id="p3"><div class="cd"><h3>Export</h3>
+<label>Aspect</label><select id="asp" onchange="S.asp=this.value;sz(false);thumbs()"><option>9:16</option><option>16:9</option><option>1:1</option></select>
+<label>Resolution</label><select id="res" onchange="S.res=+this.value"><option value="720">720p</option><option value="1080">1080p</option></select>
+<label>Format</label><select id="fmt"><option value="webm">WebM</option><option value="mp4">MP4 (only if supported)</option></select>
+<button class="b" id="eb" onclick="doExp()">Export video</button><div id="pgw"><div id="pg"></div></div><div id="ps" class="n"></div><div id="err"></div><div id="out"></div>
+<div class="n">Export records in real time (a 30s video takes ~30s). Keep Chrome in front and the screen on. If 1080p stutters, use 720p.</div></div></section>
+<section class="pn on" id="p4">
+<div class="cd"><h3>1 · Paste your complete script</h3>
+<textarea id="script" rows="9">বাংলাদেশ নদী আর সবুজে ঘেরা আমাদের প্রিয় মাতৃভূমি। || Bangladesh, our beloved land of rivers and green.
+রহিম নামের এক মাঝি ভোরে নৌকা নিয়ে নদীতে যায়। || A boatman named Rahim takes his boat out at dawn.
+গ্রামের মানুষ ধান কেটে ঘরে তোলে, সবুজ মাঠ সোনালি হয়ে ওঠে। || Villagers harvest the rice as green fields turn golden.
+১৯৭১ সালে এই মাটির মানুষ স্বাধীনতার জন্য যুদ্ধ করেছিল। || In 1971 the people of this land fought for independence.
+আজ ঢাকা শহরে কোটি মানুষের বাস, রাস্তায় গাড়ির স্রোত। || Today Dhaka is home to millions, with rivers of traffic.
+পদ্মা সেতু নতুন এক বাংলাদেশের স্বপ্ন দেখায়। || The Padma Bridge carries the dream of a new Bangladesh.
+এই দেশ, এই মাটি — আমাদের গর্ব। || This land, this soil — our pride.</textarea>
+<div class="n">Optional English subtitle per line: <i>Bengali text || English text</i>. Analysis is local keyword/rule based (no AI): it splits scenes, picks a visual style per scene from keywords, detects names/roles and places, and sets durations from reading speed.</div>
+<label>Subtitle language</label><select id="sublang"><option value="bn">Bengali (as written)</option><option value="en">English (uses the || lines)</option></select>
+<label>Voice</label><select id="vmode"><option value="own">My voice (record / upload on Audio tab)</option><option value="ai">AI voice (MP3 from TTSMaker, uploaded on Audio tab)</option><option value="none">No voice (music only)</option></select>
+<label><input type="checkbox" id="autoexp" checked> Export automatically at the end</label>
+<button class="b" id="go" onclick="produce()">▶ START PRODUCTION</button>
+<ol id="stg"></ol></div>
+<div class="cd"><h3>Storyboard</h3><div id="sb" class="n">Run production to see the generated storyboard.</div></div>
+<div class="cd"><h3>Narration preview (device voice)</h3><select id="dvoice"></select><button class="b g" onclick="speakPrev()">Speak / stop</button>
+<div class="n">Uses voices installed on your phone, for listening only. Browsers cannot record this speech into the exported video, so exported narration must be your recording or an uploaded MP3 (male/female/English voices from ttsmaker.com).</div></div>
+<div class="cd"><h3>Optional AI image / video provider</h3>
+<label>Image URL template</label><input type="text" id="pimg" placeholder="https://host/path/{prompt}?width={w}&height={h}">
+<label>Video URL template (optional, used instead of image)</label><input type="text" id="pvid" placeholder="https://host/video?prompt={prompt}">
+<label>API key (optional, sent as Bearer token)</label><input type="text" id="pkey">
+<div class="n">Empty by default: everything renders locally. When filled, each scene's prompt is fetched from your URL and used as an animated background (slow zoom for images, looping for videos). The server must return an image or video and allow browser (CORS) requests. Free endpoints such as Pollinations may work this way, but I have not tested any provider. Many good providers need a paid key, and keys typed here stay in your browser.</div></div>
+</section></main>
+<nav><button class="on" onclick="tab(4,this)">Produce</button><button onclick="tab(0,this)">Story</button><button onclick="tab(1,this)">Scene</button><button onclick="tab(2,this)">Audio</button><button onclick="tab(3,this)">Export</button></nav>
+<script>
+const $=i=>document.getElementById(i),cv=$('cv'),F='"Hind Siliguri","Noto Sans Bengali",sans-serif',PX=44;
+const AC=new(window.AudioContext||window.webkitAudioContext)();
+const S={sc:[],sel:0,asp:'9:16',res:720,tr:'flash'},O={v:{vol:1,t0:0,t1:0,off:0},m:{vol:.35,fi:1.5,fo:2,synth:true},x:{vol:.6,w:true}},B={v:null,m:null,x:null};
+let run=null,cur=0,exp=false,tmr;
+const r=i=>((i*9301+49297)%233280)/233280,ez=x=>1-Math.pow(1-Math.min(1,Math.max(0,x)),3),tot=()=>S.sc.reduce((a,s)=>a+s.d,0);
+const gl=(g,x,y,rd,c,a)=>{const q=g.createRadialGradient(x,y,0,x,y,rd);q.addColorStop(0,`rgba(${c},${a})`);q.addColorStop(1,`rgba(${c},0)`);g.fillStyle=q;g.fillRect(x-rd,y-rd,rd*2,rd*2)};
+const sky=(g,w,h,a,b,c)=>{const q=g.createLinearGradient(0,0,0,h);q.addColorStop(0,a);q.addColorStop(.55,b);q.addColorStop(1,c);g.fillStyle=q;g.fillRect(-50,-50,w+100,h+100)};
+const hill=(g,w,h,y,am,fr,ph,col,sh)=>{g.fillStyle=col;g.beginPath();g.moveTo(-60,h+50);for(let x=-60;x<=w+60;x+=12){const X=x+sh;g.lineTo(x,y+Math.sin(X*fr+ph)*am+Math.sin(X*fr*2.3+ph*1.7)*am*.4)}g.lineTo(w+60,h+50);g.fill()};
+const birds=(g,w,h,l,n)=>{g.strokeStyle='rgba(20,20,30,.8)';g.lineWidth=2;for(let i=0;i<n;i++){const x=((i*170+l*70)%(w+120))-60,y=h*.16+i*34+Math.sin(l*2+i)*12,f=Math.sin(l*11+i*2)*7;g.beginPath();g.moveTo(x-12,y+f);g.lineTo(x,y);g.lineTo(x+12,y+f);g.stroke()}};
+const dust=(g,w,h,l,n,c,sp)=>{for(let i=0;i<n;i++){const x=(r(i)*w+Math.sin(l*.8+i)*25+w)%w,y=h*(1-((l*.05*sp*(.5+r(i+7))+r(i))%1));gl(g,x,y,5+6*r(i+5),c,.25+.45*Math.abs(Math.sin(l*2+i)))}};
+const MAP=[[.30,.05],[.50,.08],[.62,.02],[.78,.12],[.85,.22],[.75,.30],[.82,.42],[.88,.62],[.80,.95],[.74,.72],[.68,.58],[.62,.62],[.60,.80],[.45,.84],[.30,.78],[.22,.62],[.12,.55],[.18,.40],[.12,.28],[.22,.15]];
+const SC={
+aerial(g,w,h,p,l,cx,k){sky(g,w,h,'#02030a','#0a1a3a','#16365a');for(let i=0;i<70;i++){g.fillStyle=`rgba(255,255,255,${.3+.6*Math.abs(Math.sin(l*2+i))})`;g.fillRect(r(i)*w,r(i+50)*h*.6,2,2)}
+gl(g,w/2,h,h*.8,'255,150,70',.15+.3*p);const bw=Math.min(w*.85,h*.62),bh=bw*.95;g.save();g.translate((w-bw)/2-cx*.3,(h-bh)/2);
+g.beginPath();MAP.forEach((q,j)=>g[j?'lineTo':'moveTo'](q[0]*bw,q[1]*bh));g.closePath();const fg=g.createLinearGradient(0,0,0,bh);fg.addColorStop(0,'#1f6b3a');fg.addColorStop(1,'#0e3b24');g.fillStyle=fg;g.shadowColor='#4ade80';g.shadowBlur=30;g.fill();g.shadowBlur=0;g.strokeStyle='rgba(120,255,170,.9)';g.lineWidth=2.5;g.stroke();g.clip();
+g.strokeStyle='rgba(125,211,252,.9)';g.lineWidth=3;g.setLineDash([16,10]);g.lineDashOffset=-l*45;
+[[.35,.05,.45,.45,.55,.85],[.7,.1,.5,.5,.35,.8],[.2,.5,.45,.55,.62,.7]].forEach(a=>{g.beginPath();g.moveTo(a[0]*bw,a[1]*bh);g.quadraticCurveTo(a[2]*bw,a[3]*bh,a[4]*bw,a[5]*bh);g.stroke()});
+g.strokeStyle='#fbbf24';g.lineWidth=4;g.setLineDash([320*ez(p*1.5),9999]);g.lineDashOffset=0;g.beginPath();g.moveTo(.46*bw,.47*bh);g.quadraticCurveTo(.66*bw,.5*bh,.74*bw,.78*bh);g.stroke();g.setLineDash([]);
+[[.46,.47],[.74,.78],[.30,.70],[.78,.20]].forEach((c,j)=>gl(g,c[0]*bw,c[1]*bh,26+8*Math.sin(l*4+j),'255,200,80',.9));g.restore();
+for(let i=0;i<4;i++)gl(g,((i*260+l*(20+i*8))%(w+400))-200,h*(.2+.18*i),220,'255,255,255',.05+.04*k)},
+country(g,w,h,p,l,cx,k){sky(g,w,h,'#ff9a56','#ffd7a1','#a6dcff');const sx=w*.7-cx*.1,sy=h*.4;gl(g,sx,sy,260,'255,225,160',.6+.15*Math.sin(l*2));g.fillStyle='#fff3c4';g.beginPath();g.arc(sx,sy,34,0,7);g.fill();
+hill(g,w,h,h*.5,26,.006,1,'#7aa86b',-cx*.2);hill(g,w,h,h*.56,32,.009,3,'#4f8f4a',-cx*.45);hill(g,w,h,h*.6,22,.012,5,'#2f6f3a',-cx*.7);
+const ry=h*.66,rh=h*.12,rg=g.createLinearGradient(0,ry,0,ry+rh);rg.addColorStop(0,'#5fb0e0');rg.addColorStop(1,'#2d7ab0');g.fillStyle=rg;g.beginPath();g.moveTo(-50,ry);for(let x=-50;x<=w+50;x+=12)g.lineTo(x,ry+Math.sin(x*.01+l*.6)*4);g.lineTo(w+50,ry+rh);g.lineTo(-50,ry+rh);g.fill();
+g.strokeStyle='rgba(255,255,255,.45)';g.lineWidth=2;for(let i=0;i<40;i++){const x=((r(i)*w+l*(30+r(i+9)*40)-cx)%w+w)%w,y=ry+r(i+3)*rh;g.beginPath();g.moveTo(x,y);g.lineTo(x+10+r(i+4)*30,y);g.stroke()}
+const fy=ry+rh,fg=g.createLinearGradient(0,fy,0,h);fg.addColorStop(0,'#5fae3a');fg.addColorStop(1,'#1f5a22');g.fillStyle=fg;g.fillRect(-50,fy,w+100,h-fy+50);
+g.strokeStyle='rgba(190,240,110,.5)';g.lineWidth=2;for(let i=-4;i<24;i++){g.beginPath();for(let t=0;t<=1.01;t+=.1){const X=w/2+(i*w/18-w/2)*(.05+t)-cx*.1*(1+t*3)+Math.sin(l*3+t*6+i)*6*t;t?g.lineTo(X,fy+(h-fy)*t):g.moveTo(X,fy)}g.stroke()}
+birds(g,w,h,l,4);dust(g,w,h,l,Math.round(40*k),'255,230,150',1)},
+village(g,w,h,p,l,cx,k){sky(g,w,h,'#2b1055','#d1492e','#ffb35c');const sx=w*.55-cx*.1;gl(g,sx,h*.5,300,'255,190,100',.8);g.fillStyle='#ffe2a0';g.beginPath();g.arc(sx,h*.5,40,0,7);g.fill();
+hill(g,w,h,h*.55,18,.01,2,'#5a2a3a',-cx*.2);const gy=h*.62;g.fillStyle='#2a1a1a';g.fillRect(-50,gy,w+100,h);
+const ry=h*.74,rg=g.createLinearGradient(0,ry,0,h);rg.addColorStop(0,'#e0864a');rg.addColorStop(1,'#5a3a5a');g.fillStyle=rg;g.fillRect(-50,ry,w+100,h);g.strokeStyle='rgba(255,230,170,.4)';g.lineWidth=2;for(let i=0;i<30;i++){const x=(r(i)*w+l*20)%w,y=ry+10+r(i+2)*(h-ry-20);g.beginPath();g.moveTo(x,y);g.lineTo(x+20+r(i)*30,y);g.stroke()}
+const hx=w*.3-cx*.5,hy=gy+10;g.fillStyle='#3a2518';g.fillRect(hx,hy-90,170,90);g.fillStyle='#8a6a35';g.beginPath();g.moveTo(hx-25,hy-88);g.lineTo(hx+85,hy-170);g.lineTo(hx+195,hy-88);g.fill();
+gl(g,hx+120,hy-50,60,'255,190,80',.7+.2*Math.sin(l*9));g.fillStyle='#ffcf70';g.fillRect(hx+105,hy-65,30,30);g.fillStyle='#1b100a';g.fillRect(hx+30,hy-62,36,62);
+for(let i=0;i<14;i++){const q=(l*.4+i/14)%1;gl(g,hx+140+Math.sin(q*6+i)*14+q*50,hy-165-q*180,10+q*34,'200,200,210',.35*(1-q))}
+[[w*.1,1],[w*.82,-1],[w*.92,.8]].forEach(([x0,d],i)=>{const x=x0-cx*.7,sw=Math.sin(l*1.5+i)*10,tx=x+sw+30*d;g.strokeStyle='#120a08';g.lineWidth=9;g.beginPath();g.moveTo(x,gy+20);g.quadraticCurveTo(x+20*d,gy-120,tx,gy-230);g.stroke();for(let j=0;j<7;j++){const a=-Math.PI/2+(j-3)*.5+Math.sin(l*2+j+i)*.06;g.lineWidth=4;g.beginPath();g.moveTo(tx,gy-230);g.quadraticCurveTo(tx+Math.cos(a)*50,gy-250+Math.sin(a)*50,tx+Math.cos(a)*100,gy-190+Math.sin(a)*100);g.stroke()}});
+const bx=((l*28)%(w+300))-150-cx*.3,by=ry+45+Math.sin(l*2)*3;g.fillStyle='#0d0808';g.beginPath();g.moveTo(bx-70,by);g.quadraticCurveTo(bx,by+26,bx+70,by);g.lineTo(bx+55,by-8);g.lineTo(bx-55,by-8);g.fill();g.fillRect(bx-5,by-38,4,30);g.beginPath();g.arc(bx,by-48,8,0,7);g.fill();
+birds(g,w,h,l,5);dust(g,w,h,l,Math.round(36*k),'255,190,90',1.2)},
+city(g,w,h,p,l,cx,k){sky(g,w,h,'#0b1030','#5b2a6e','#ff7a59');gl(g,w*.5,h*.62,w*.7,'255,120,90',.35);const base=h*.8;
+for(let ly=0;ly<2;ly++){const dp=ly?.8:.35;for(let i=0;i<30;i++){const bw=46+r(i+ly*40)*50,x=i*(w/22)-cx*dp-80,bh=h*(.12+r(i+ly*7)*(ly?.3:.22)+(!ly&&i%9==4?.2:0));g.fillStyle=ly?'#0b0922':'#1b1445';g.fillRect(x,base-bh,bw,bh);
+for(let a=0;a<bh/22;a++)for(let b=0;b<bw/16;b++)if(r(i*31+a*7+b+ly)>.55&&Math.sin(l*1.5+a*b+i)>-.6){g.fillStyle=ly?'rgba(255,214,120,.85)':'rgba(255,214,120,.35)';g.fillRect(x+6+b*16,base-bh+8+a*22,6,10)}}}
+g.fillStyle='#08070f';g.fillRect(-50,base,w+100,h);g.fillStyle='rgba(255,255,255,.35)';for(let i=-1;i<10;i++)g.fillRect(((i*120+l*140)%(w+240))-120,h*.9,60,4);
+for(let i=0;i<10;i++){const ln=i%2,d=ln?-1:1,sp=60+r(i)*70,x=(((r(i+3)*w+d*l*sp)%(w+240))+w+240)%(w+240)-120,y=h*(.83+ln*.08);const hue=r(i+8)*360;
+g.strokeStyle=`rgba(255,${ln?60:230},${ln?60:150},.35)`;g.lineWidth=3;g.beginPath();g.moveTo(x,y+4);g.lineTo(x-d*(60+sp),y+4);g.stroke();g.fillStyle=`hsl(${hue},55%,40%)`;g.beginPath();g.roundRect?g.roundRect(x-34,y-14,68,22,6):g.rect(x-34,y-14,68,22);g.fill();gl(g,x+d*38,y,34,'255,240,190',.8);gl(g,x-d*36,y,18,'255,40,40',.9)}
+gl(g,w*.5,h*.8,w*.6,'255,150,100',.12*k+.05)},
+bridge(g,w,h,p,l,cx,k){sky(g,w,h,'#1d2b64','#f8b878','#ffe3b0');const sy=h*(.5-.1*p);gl(g,w*.5,sy,w*.8,'255,200,120',.7);g.fillStyle='#fff6d8';g.beginPath();g.arc(w*.5,sy,46,0,7);g.fill();hill(g,w,h,h*.55,10,.01,1,'#6b6a8a',-cx*.1);
+const wy=h*.56,rg=g.createLinearGradient(0,wy,0,h);rg.addColorStop(0,'#f0b27a');rg.addColorStop(1,'#1c3d5e');g.fillStyle=rg;g.fillRect(-50,wy,w+100,h);
+for(let i=0;i<50;i++){const y=wy+4+r(i)*(h-wy-8),x=w*.5+(r(i+9)-.5)*(60+(y-wy)*.8)+Math.sin(l*2+i)*6;g.fillStyle=`rgba(255,235,190,${.5-.4*(y-wy)/(h-wy)})`;g.fillRect(x,y,20+r(i)*30,2)}
+g.save();g.beginPath();g.rect(-50,0,w*ez(p*1.25+.05)+50,h);g.clip();const dy=h*.62,off=-cx*1.2,top=dy-100;g.fillStyle='#2a2f45';g.strokeStyle='#2a2f45';
+for(let x=-200+off%160;x<w+200;x+=160)g.fillRect(x,dy,14,h*.3);g.lineWidth=3;g.beginPath();g.moveTo(-60,top);g.lineTo(w+60,top);g.stroke();
+for(let x=-200+off%40;x<w+200;x+=40){g.beginPath();g.moveTo(x,dy);g.lineTo(x+20,top);g.lineTo(x+40,dy);g.stroke()}g.fillRect(-60,dy,w+120,12);
+for(let x=-200+off%80;x<w+200;x+=80)gl(g,x+20,top,18,'255,230,150',.9);
+for(let i=0;i<9;i++){const x=(r(i)*w+l*(90+r(i)*70))%w;gl(g,x,dy-5,14,i%2?'255,240,190':'255,60,60',.9)}g.restore();
+for(let i=0;i<3;i++)gl(g,((i*300+l*14)%(w+300))-100,wy+10,260,'255,230,200',.12*k+.04);birds(g,w,h,l,3);dust(g,w,h,l,Math.round(24*k),'255,230,170',.8)},
+title(g,w,h,p,l,cx,k){sky(g,w,h,'#04060f','#0c1f3a','#0f3b2a');const x0=w/2,y0=h*.45,M=Math.max(w,h);g.save();g.translate(x0,y0);
+for(let i=0;i<16;i++){g.rotate(Math.PI/8+Math.sin(l*.3)*.002);const q=g.createLinearGradient(0,0,0,M);q.addColorStop(0,`rgba(255,210,120,${.14+.06*Math.sin(l*2+i)})`);q.addColorStop(1,'rgba(255,210,120,0)');g.fillStyle=q;g.beginPath();g.moveTo(0,0);g.lineTo(-24,M);g.lineTo(24,M);g.fill()}g.restore();
+gl(g,x0,y0,280+20*Math.sin(l*3),'220,38,60',.55);g.fillStyle='#e11d48';g.beginPath();g.arc(x0,y0,110*ez(l/1.2),0,7);g.fill();
+for(let i=0;i<Math.round(80*k);i++){const a=r(i)*6.28+l*.6,d=1-((l*.2+r(i+4))%1),rr=d*M*.6;gl(g,x0+Math.cos(a)*rr,y0+Math.sin(a)*rr,4+5*r(i+2),'255,210,120',.8*(1-d*.5))}}};
+const seg=t=>window.Intl&&Intl.Segmenter?[...new Intl.Segmenter('bn',{granularity:'grapheme'}).segment(t)].map(s=>s.segment):Array.from(t);
+function kin(g,txt,cx,y,sz,l,td){g.font=`700 ${sz}px ${F}`;g.textAlign='left';g.textBaseline='middle';const ch=seg(txt),tw=g.measureText(txt).width,x0=cx-tw/2;let pre='';
+ch.forEach((c,i)=>{const a=g.measureText(pre).width;pre+=c;const b=g.measureText(pre).width,q=ez((l-.07*i-.1)/.6);if(q<=0)return;g.save();g.beginPath();g.rect(x0+a-1,y-sz,b-a+2,sz*2);g.clip();g.globalAlpha=q;const xc=x0+(a+b)/2,s=1+(1-q)*.7;g.translate(xc,y+(1-q)*70);g.scale(s,s);g.translate(-xc,-y);
+if(td)for(let j=12;j>0;j--){g.fillStyle=`rgb(${110-j*6},${60-j*3},8)`;g.fillText(txt,x0+j*1.3,y+j*1.3)}g.shadowColor='rgba(255,190,70,.9)';g.shadowBlur=22;g.fillStyle='#fff';g.fillText(txt,x0,y);g.restore()})}
+function wrap(g,t,mw){const L=[];let c='';for(const x of t.split(' ')){const q=c?c+' '+x:x;if(g.measureText(q).width>mw&&c){L.push(c);c=x}else c=q}L.push(c);return L}
+function draw(t,c=cv){const g=c.getContext('2d'),W=c.width,H=c.height,u=Math.min(W,H)/720,w=W/u,h=H/u;if(c===cv)cur=t;g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation='source-over';g.fillStyle='#000';g.fillRect(0,0,W,H);if(!S.sc.length)return;
+let a=0,i=0;for(;i<S.sc.length;i++){if(t<a+S.sc[i].d)break;a+=S.sc[i].d}if(i>=S.sc.length){i=S.sc.length-1;a-=S.sc[i].d}
+const s=S.sc[i],l=Math.min(Math.max(t-a,0),s.d),p=l/s.d;g.save();g.scale(u,u);g.beginPath();g.rect(0,0,w,h);g.clip();
+if(S.tr=='wipe'&&l<.7){g.beginPath();g.rect(0,0,w*ez(l/.7),h);g.clip()}
+g.save();CS=s;const cm=s.cm,z=1+(s.p=='aerial'?.45:cm=='zoom'?.25:.14)*s.cam*p,ty=cm=='track'?Math.sin(p*3)*h*.012*s.cam:0;g.translate(w/2,h/2);g.scale(z,z);g.translate(-w/2,-h/2+ty);if(s.ext&&s.ext.ok)drawExt(g,w,h,s,p);else(SC[s.p]||SC.aerial)(g,w,h,p,l,(p-.5)*w*({pan:.5,track:.35,zoom:.15}[cm]||.3)*s.cam,s.fx);if(s.chars&&s.chars.length)chars(g,w,h,s,l,p);g.restore();
+g.globalCompositeOperation='soft-light';g.globalAlpha=.4;g.fillStyle=s.c;g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';g.globalAlpha=1;
+const vg=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.6)');g.fillStyle=vg;g.fillRect(0,0,w,h);
+if(s.t){g.save();if(s.p=='title')kin(g,s.t,w/2,h*.45,w<h?84:100,l,s.td);else kin(g,s.t,w/2,h*.13,w<h?60:54,l,s.td);g.restore()}
+const sb=subAt(s,l);if(sb){g.font=`500 28px ${F}`;g.textAlign='center';g.textBaseline='middle';const L=wrap(g,sb,w*.84),lh=42,bh=L.length*lh+22,by=h-bh-h*.06;g.globalAlpha=ez(l/.5)*ez((s.d-l)/.3);g.fillStyle='rgba(0,0,0,.6)';g.beginPath();g.roundRect?g.roundRect(w*.05,by,w*.9,bh,16):g.rect(w*.05,by,w*.9,bh);g.fill();g.fillStyle='#fff';L.forEach((q,j)=>g.fillText(q,w/2,by+11+lh*(j+.5)));g.globalAlpha=1}
+const rgb=S.tr=='flash'?'255,255,255':'0,0,0';let ov=0;if(S.tr!='wipe'){if(l<.7)ov=Math.pow(1-l/.7,2);if(s.d-l<.3&&i<S.sc.length-1)ov=Math.max(ov,1-(s.d-l)/.3)}if(ov>0){g.fillStyle=`rgba(${rgb},${ov})`;g.fillRect(0,0,w,h)}
+g.restore();if(c===cv){$('sk').value=t;$('tm').textContent=t.toFixed(1)+'/'+tot().toFixed(1);const ph=$('ph');if(ph)ph.style.left=(t*PX)+'px'}}
+function sz(ex){const sh=ex?S.res:360,R={'9:16':[9,16],'16:9':[16,9],'1:1':[1,1]}[S.asp],ev=x=>Math.round(x/2)*2;cv.width=ev(R[0]>=R[1]?sh*R[0]/R[1]:sh);cv.height=ev(R[1]>=R[0]?sh*R[1]/R[0]:sh);draw(Math.min(cur,Math.max(0,tot()-.01)))}
+function seekT(t){if(run)return;draw(Math.min(t,Math.max(0,tot()-.01)))}
+const st=i=>S.sc.slice(0,i).reduce((a,s)=>a+s.d,0);
+function thumbs(){const T=tot(),R={'9:16':[54,96],'16:9':[96,54],'1:1':[72,72]}[S.asp];let h=`<div id="ph"></div><div id="row">`;S.sc.forEach((s,i)=>h+=`<div class="bl ${i==S.sel?'on':''}" style="width:${s.d*PX}px;flex:none" onclick="selS(${i})"><canvas width="${R[0]}" height="${R[1]}"></canvas><span>${i+1}. ${s.t}</span></div>`);h+='</div>';
+if(B.v)h+=`<div class="trk" style="background:#2563eb;width:${Math.max(.2,(O.v.t1>O.v.t0?O.v.t1:B.v.duration)-O.v.t0)*PX}px;margin-left:${O.v.off*PX}px">Voice</div>`;
+h+=`<div class="trk" style="background:#7c3aed;width:${T*PX}px">${B.m?'Music (file)':O.m.synth?'Music (synth)':'Music off'}</div><div class="trk" style="background:#0d9488;width:${T*PX}px">${B.x?'SFX (file)':O.x.w?'SFX (whoosh)':'SFX off'}</div>`;
+$('tin').style.width=T*PX+'px';$('tin').innerHTML=h;document.querySelectorAll('#row canvas').forEach((c,i)=>draw(st(i)+S.sc[i].d*.6,c));draw(cur);$('sk').max=T}
+const tH=()=>{clearTimeout(tmr);tmr=setTimeout(thumbs,300)};
+const mk=(t,n,d,p,c,td)=>({t,n,d,p,c,cam:1,fx:1,td:td!==0});
+function demo(){S.sc=[mk('বাংলাদেশ','নদী আর সবুজে ঘেরা আমাদের মাতৃভূমি।',5,'aerial','#ff8844'),mk('সবুজ প্রান্তর','ধানক্ষেত আর বহমান নদীর দেশ।',5,'country','#ffcc66'),mk('গ্রামীণ জীবন','গ্রামের সকাল, নৌকা আর মাটির গন্ধ।',5,'village','#ff6a3c'),mk('ঢাকা','রাজধানী ঢাকা, কখনো না থামা এক শহর।',5,'city','#7a4cff'),mk('পদ্মা সেতু','পদ্মার বুকে আমাদের স্বপ্নের সেতু।',5,'bridge','#ffaa55'),mk('সুন্দর বাংলাদেশ','এই দেশ, এই মাটি — আমাদের গর্ব।',5,'title','#22c55e')];S.sel=0;cur=1.5;rS()}
+function gen(){const q=$('topic').value.trim()||'আমার গল্প',P=['aerial','country','village','city','bridge','title'],C=['#ff8844','#ffcc66','#ff6a3c','#7a4cff','#ffaa55','#22c55e'];
+const T=[q,'শুরুর পথ','মানুষের জীবন','শহরের গতি','এগিয়ে চলা',q],N=[q+' — আজ আমরা এই গল্প শুনব।','এখান থেকেই যাত্রা শুরু।','মানুষের জীবনের ছোঁয়ায় গল্প এগোয়।','সময় এখানে থেমে থাকে না।','প্রতিটি পদক্ষেপে নতুন স্বপ্ন।',q+' — এটাই আমাদের গল্প।'];
+S.sc=P.map((p,i)=>mk(T[i],N[i],5,p,C[i]));S.sel=0;cur=1.5;rS();tab(1,document.querySelectorAll('nav button')[2])}
+function tab(i,b){document.querySelectorAll('.pn').forEach((p,k)=>p.classList.toggle('on',k==i));document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on')}
+function rS(){const s=S.sc[S.sel];if(s){$('sn').textContent='Editing scene '+(S.sel+1)+' of '+S.sc.length+' (tap a block in the timeline to switch)';['t','n','d','p','c','cam','fx','cm','en'].forEach(k=>$('f_'+k).value=s[k]??(k=='cm'?'zoom':''));$('f_td').checked=!!s.td}sz(false);thumbs()}
+function selS(i){S.sel=i;if(!run)cur=st(i)+Math.min(2,S.sc[i].d*.5);rS()}
+function ed(k,v){const s=S.sc[S.sel];if(!s)return;s[k]=k=='d'?Math.max(1,+v||1):v;if(!run)cur=st(S.sel)+Math.min(2,s.d*.5);draw(cur);tH()}
+function addS(){S.sc.splice(S.sel+1,0,mk('New scene','Write narration here.',5,'country','#ffcc66'));S.sel++;rS()}
+function delS(){if(S.sc.length>1){S.sc.splice(S.sel,1);S.sel=0;rS()}}
+function mvS(){if(S.sel>0){const a=S.sc;[a[S.sel-1],a[S.sel]]=[a[S.sel],a[S.sel-1]];S.sel--;rS()}}
+function copyN(){const t=S.sc.map(s=>s.n).join('\n');navigator.clipboard?.writeText(t).then(()=>alert('Copied')).catch(()=>prompt('Copy:',t))}
+/* audio */
+function noiseB(d){const b=AC.createBuffer(1,AC.sampleRate*d,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;return b}
+function whoosh(out,when){const s=AC.createBufferSource();s.buffer=noiseB(.7);const f=AC.createBiquadFilter();f.type='bandpass';f.Q.value=1.5;f.frequency.setValueAtTime(300,when);f.frequency.exponentialRampToValueAtTime(3500,when+.6);const g=AC.createGain();g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(O.x.vol*.6,when+.3);g.gain.linearRampToValueAtTime(0,when+.65);s.connect(f);f.connect(g);out.forEach(o=>g.connect(o));s.start(when);return s}
+function synth(mg,t0,T,nodes){const ch=[[220,261.6,329.6],[174.6,220,261.6],[261.6,329.6,392],[196,246.9,293.7]],lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;lp.connect(mg);for(let k=0;k*4<T;k++)ch[k%4].forEach(fr=>{const o=AC.createOscillator(),g=AC.createGain();o.type='triangle';o.frequency.value=fr;const s=t0+k*4;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.18,s+1);g.gain.linearRampToValueAtTime(0,s+4.1);o.connect(g);g.connect(lp);o.start(s);o.stop(s+4.2);nodes.push(o)})}
+function play(out,onend){stop();AC.resume();const T=tot(),t0=AC.currentTime+.15,nodes=[];
+const src=(buf,vol,when,off,dur)=>{const s=AC.createBufferSource();s.buffer=buf;const g=AC.createGain();g.gain.value=vol;s.connect(g);out.forEach(o=>g.connect(o));s.start(when,off,dur);s.stop(t0+T+.05);nodes.push(s)};
+if(B.v&&$('vmode').value!='none')src(B.v,O.v.vol,t0+O.v.off,O.v.t0,Math.max(.1,(O.v.t1>O.v.t0?O.v.t1:B.v.duration)-O.v.t0));
+let mg=null;if(B.m){mg=AC.createGain();const s=AC.createBufferSource();s.buffer=B.m;s.loop=true;s.connect(mg);s.start(t0);s.stop(t0+T+.05);nodes.push(s)}else if(O.m.synth){mg=AC.createGain();synth(mg,t0,T,nodes)}
+if(mg){out.forEach(o=>mg.connect(o));const v=O.m.vol;mg.gain.setValueAtTime(0,t0);mg.gain.linearRampToValueAtTime(v,t0+Math.max(.05,O.m.fi));mg.gain.setValueAtTime(v,Math.max(t0+O.m.fi+.05,t0+T-O.m.fo));mg.gain.linearRampToValueAtTime(0,t0+T)}
+let a=0;S.sc.forEach(s=>{if(B.x)src(B.x,O.x.vol,t0+a,0,Math.min(2,B.x.duration));else if(O.x.w)nodes.push(whoosh(out,t0+a));a+=s.d});
+S.sc.forEach(s=>s.ext&&s.ext.kind=='video'&&s.ext.el.play().catch(()=>{}));run={t0,T,nodes,end:onend};$('pl').textContent='⏸';requestAnimationFrame(loop)}
+function loop(){if(!run)return;const t=AC.currentTime-run.t0;if(t>=run.T){draw(run.T-.001);const f=run.end;stop();f&&f();return}draw(Math.max(0,t));if(exp){$('pg').style.width=(100*t/run.T)+'%';$('ps').textContent='Rendering '+t.toFixed(1)+' / '+run.T.toFixed(1)+' s'}requestAnimationFrame(loop)}
+function stop(){if(run){run.nodes.forEach(n=>{try{n.stop()}catch(e){}});run=null}S.sc.forEach(s=>s.ext&&s.ext.kind=='video'&&s.ext.el.pause());$('pl').textContent='▶'}
+function togglePlay(){run?stop():play([AC.destination])}
+async function ld(k,f){if(!f)return;try{const b=await AC.decodeAudioData(await f.arrayBuffer());B[k]=b;const m=`${f.name} — ${b.duration.toFixed(1)} s`;if(k=='v'){$('va').src=URL.createObjectURL(f);$('vi').textContent=m}else $(k+'i').textContent=m;thumbs()}catch(e){alert('Cannot read audio: '+e.message)}}
+let mr=null,rc=[];
+async function recT(){if(mr){mr.stop();return}try{const s=await navigator.mediaDevices.getUserMedia({audio:true});rc=[];mr=new MediaRecorder(s);mr.ondataavailable=e=>rc.push(e.data);mr.onstop=async()=>{s.getTracks().forEach(t=>t.stop());mr=null;$('rec').textContent='🎙 Record';const bl=new Blob(rc,{type:rc[0]?.type||'audio/webm'});await ld('v',new File([bl],'recording',{type:bl.type}))};mr.start();$('rec').textContent='⏹ Stop'}catch(e){mr=null;alert('Microphone unavailable (needs HTTPS + permission): '+e.message)}}
+function fit(){if(!B.v)return alert('Add a voice first');const L=(O.v.t1>O.v.t0?O.v.t1:B.v.duration)-O.v.t0,w=S.sc.map(s=>Math.max(8,s.n.length)),sm=w.reduce((a,b)=>a+b);S.sc.forEach((s,i)=>s.d=Math.max(1.5,+(L*w[i]/sm).toFixed(1)));rS();alert('Scene durations set by narration length: total '+tot().toFixed(1)+' s. Fine-tune in the Scene tab.')}
+/* export */
+async function doExp(){const er=$('err');er.textContent='';$('out').innerHTML='';
+if(!window.MediaRecorder||!cv.captureStream)return er.textContent='MediaRecorder/captureStream not supported. Use Android Chrome.';
+const want=$('fmt').value,list=want=='mp4'?['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4']:['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];const mime=list.find(m=>MediaRecorder.isTypeSupported(m));
+if(!mime)return er.textContent=want=='mp4'?'MP4 recording is not supported on this device. Choose WebM.':'No supported video format.';
+try{await document.fonts.load('700 40px "Hind Siliguri"')}catch(e){}
+$('eb').disabled=true;exp=true;sz(true);AC.resume();const fin=()=>{exp=false;$('eb').disabled=false;sz(false);const f=expDone;expDone=null;f&&f()};
+try{const dest=AC.createMediaStreamDestination(),s=cv.captureStream(30);dest.stream.getAudioTracks().forEach(t=>s.addTrack(t));const rec=new MediaRecorder(s,{mimeType:mime,videoBitsPerSecond:S.res==1080?8e6:4e6,audioBitsPerSecond:128e3}),ch=[];
+rec.ondataavailable=e=>e.data.size&&ch.push(e.data);rec.onerror=e=>{er.textContent='Recorder error: '+(e.error?.message||'unknown');fin()};
+rec.onstop=()=>{const bl=new Blob(ch,{type:mime.split(';')[0]}),ext=mime.includes('mp4')?'mp4':'webm',url=URL.createObjectURL(bl);$('pg').style.width='100%';$('ps').textContent=`Done — ${(bl.size/1048576).toFixed(1)} MB (${ext})`;
+$('out').innerHTML=`<a class="b" style="display:inline-block;text-decoration:none" href="${url}" download="bangladesh-video.${ext}">⬇ Download ${ext}</a><video controls playsinline src="${url}" style="width:100%;max-height:40vh;margin-top:8px;border-radius:8px"></video><div class="n">If the download does not start, long-press the video to save it.</div>`;fin()};
+rec.start(1000);play([dest],()=>setTimeout(()=>rec.state!='inactive'&&rec.stop(),300))}catch(e){er.textContent='Export failed: '+e.message;fin()}}
+function saveP(){try{localStorage.setItem('bvs2',JSON.stringify({sc:S.sc,asp:S.asp,res:S.res,tr:S.tr,O,CH},(k,v)=>k=='ext'?undefined:v));alert('Saved')}catch(e){alert('Save failed: '+e.message)}}
+function loadP(){const p=JSON.parse(localStorage.getItem('bvs2')||'null');if(!p)return alert('Nothing saved');S.sc=p.sc;Object.assign(CH,p.CH||{});S.asp=p.asp;S.res=p.res;S.tr=p.tr;['v','m','x'].forEach(k=>Object.assign(O[k],p.O[k]));$('asp').value=S.asp;$('res').value=S.res;$('tr').value=S.tr;S.sel=0;rS()}
+
+/* ===== v3: script analysis, extra scenes, characters, provider layer, pipeline ===== */
+let CS=null,expDone=null;const CH={};
+const STY={aerial:['Animated map','zoom'],country:['Cinematic 2D landscape','pan'],village:['Cinematic 2D village','track'],city:['Motion-graphics city','pan'],bridge:['3D-style bridge reveal','track'],history:['Historical reconstruction','zoom'],info:['Infographic','zoom'],threed:['Real-time 3D (Three.js)','track'],title:['Title reveal','zoom']};
+const KW=[['bridge',/bridge|সেতু/i],['history',/history|war|1971|1952|independen|ancient|ইতিহাস|যুদ্ধ|স্বাধীন|১৯৭১|১৯৫২|ভাষা আন্দোলন/i],['info',/percent|million|billion|%|\d{2,}|[০-৯]{2,}|কোটি|লক্ষ|শতাংশ|হাজার/i],['threed',/3d|space|mountain|globe|planet|পাহাড়|মহাকাশ|পৃথিবী|গ্রহ/i],['city',/city|traffic|street|urban|শহর|ঢাকা|রাস্তা|গাড়ি|যানজট|রাজধানী/i],['village',/village|boat|hut|farmer|গ্রাম|নৌকা|কৃষক|মাঝি/i],['country',/river|field|green|rice|rain|nature|forest|নদী|ধান|সবুজ|প্রকৃতি|বৃষ্টি|মাঠ|বন/i],['aerial',/map|border|district|region|মানচিত্র|সীমান্ত|জেলা|অঞ্চল|দেশ|ভূখণ্ড/i]];
+const ROLE=/কৃষক|মাঝি|শিশু|বাবা|ছাত্র|শিক্ষক|farmer|boatman|child|mother|father|student|teacher/gi;
+const LOC=/ঢাকা|চট্টগ্রাম|সিলেট|খুলনা|রাজশাহী|কক্সবাজার|সুন্দরবন|পদ্মা|মেঘনা|যমুনা|Dhaka|Chittagong|Sylhet|Khulna|Padma|Sundarbans/g;
+function mkChar(n){if(CH[n])return;let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))>>>0;CH[n]={skin:['#f1c9a5','#d9a273','#b57b4f','#8a5a3a'][h%4],shirt:`hsl(${h%360},60%,45%)`,pants:'#23283a',hat:/কৃষক|মাঝি|farmer|boatman/i.test(n),hatc:'#d8b45a'}}
+function analyze(txt){
+ const lines=txt.split(/\n+/).map(x=>x.trim()).filter(Boolean),ss=[];
+ lines.forEach(L=>{if(L.includes('||')){const a=L.split('||');ss.push({bn:a[0].trim(),en:(a[1]||'').trim()})}else(L.match(/[^।.!?]+[।.!?]?/g)||[L]).forEach(q=>{q=q.trim();q&&ss.push({bn:q,en:''})})});
+ const total=ss.reduce((a,x)=>a+x.bn.length,0),thr=Math.max(45,total/12),raw=[];let c={bn:'',en:''};
+ ss.forEach((x,i)=>{c.bn+=(c.bn?' ':'')+x.bn;if(x.en)c.en+=(c.en?' ':'')+x.en;if(c.bn.length>=thr||i==ss.length-1){raw.push(c);c={bn:'',en:''}}});
+ let h=0;for(const ch of txt.slice(0,200))h=(h*31+ch.charCodeAt(0))>>>0;const tint=['#ff8844','#ffcc66','#7a4cff','#22c55e'][h%4];
+ for(const k in CH)delete CH[k];const nm=new Set();
+ (txt.match(/(?:named|called)\s+[A-Z][a-z]+/g)||[]).forEach(m=>nm.add(m.split(/\s+/).pop()));(txt.match(/[\u0980-\u09FF]+(?=\s+নামের)/g)||[]).forEach(n=>nm.add(n));(txt.match(ROLE)||[]).forEach(x=>nm.add(x.toLowerCase()));nm.forEach(mkChar);
+ let prev='';const titleA=raw[0].bn.split(/\s+/).slice(0,3).join(' ');
+ return raw.map((x,i)=>{const hits=KW.filter(([k,re])=>re.test(x.bn+' '+x.en)).map(a=>a[0]);let p=hits.find(k=>k!=prev)||['country','village','city','aerial'].find((k,j)=>k!=prev&&j>=i%4)||'country';
+  if(i==0&&hits.includes('aerial'))p='aerial';if(i==raw.length-1&&raw.length>1)p='title';prev=p;
+  const locs=[...new Set(x.bn.match(LOC)||[])].slice(0,2),chs=[...nm].filter(n=>x.bn.toLowerCase().includes(n.toLowerCase())).slice(0,3),cm=STY[p][1];
+  const s=mk(i==0||i==raw.length-1?titleA:(locs[0]||''),x.bn,Math.min(9,Math.max(3,Math.round((x.bn.length/13+1.8)*2)/2)),p,tint,1);
+  s.en=x.en;s.cm=cm;s.chars=chs;s.desc=`${locs.length?locs.join(', ')+' · ':''}${chs.length?'characters: '+chs.join(', ')+' · ':''}camera ${cm} · palette ${tint}`;
+  s.prompt=`${STY[p][0]} of ${locs.join(', ')||'Bangladesh'}. ${x.en} Cinematic lighting, consistent palette ${tint}.`;return s})}
+function subAt(s,l){const t=($('sublang').value=='en'&&s.en)?s.en:s.n;if(!t)return'';const ch=t.match(/[^,،;।.!?]+[,،;।.!?]*/g)||[t],tl=ch.reduce((a,c)=>a+c.length,0),f=Math.min(.999,Math.max(0,(l-.15)/Math.max(.5,s.d-.3)))*tl;let a=0;for(const c of ch){if(f<a+c.length)return c.trim();a+=c.length}return ch[ch.length-1].trim()}
+function chars(g,w,h,s,l,p){s.chars.forEach((n,i)=>{const c=CH[n];if(!c)return;const x=w*(.15+i*.25+p*.45),y=h*.9,sw=Math.sin(l*7+i)*.45;g.save();g.translate(x,y);g.scale(1.1,1.1);g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(0,2,28,7,0,0,7);g.fill();
+ g.fillStyle=c.pants;[-1,1].forEach(d=>{g.save();g.translate(d*7,-52);g.rotate(sw*d);g.fillRect(-5,0,10,52);g.restore()});g.fillStyle=c.shirt;g.beginPath();g.roundRect?g.roundRect(-18,-112,36,64,10):g.rect(-18,-112,36,64);g.fill();
+ g.fillStyle=c.skin;g.beginPath();g.arc(0,-128,15,0,7);g.fill();if(c.hat){g.fillStyle=c.hatc;g.beginPath();g.ellipse(0,-138,26,7,0,0,7);g.fill();g.fillRect(-12,-150,24,12)}g.restore()})}
+function drawExt(g,w,h,s,p){const e=s.ext.el,iw=e.videoWidth||e.naturalWidth||e.width,ih=e.videoHeight||e.naturalHeight||e.height,k=Math.max(w/iw,h/ih)*(1.05+.12*p);g.save();g.translate(w/2+(p-.5)*40,h/2);g.scale(k,k);g.drawImage(e,-iw/2,-ih/2);g.restore()}
+SC.info=(g,w,h,p,l,cx,k)=>{sky(g,w,h,'#070b1e','#14224a','#0a1a30');g.strokeStyle='rgba(120,160,255,.15)';g.lineWidth=1;for(let i=0;i<14;i++){g.beginPath();g.moveTo(0,h*.2+i*h*.05);g.lineTo(w,h*.2+i*h*.05);g.stroke()}
+ const x0=w*.08,x1=w*.92,y0=h*.78,y1=h*.38,n=9,pts=[],sd=CS?CS.n.length:0;for(let i=0;i<n;i++)pts.push([x0+(x1-x0)*i/(n-1),y0-(y0-y1)*(.15+.85*Math.pow(i/(n-1),1.4)*(.8+.2*r(i+sd)))]);
+ g.save();g.beginPath();g.rect(0,0,w*ez(p*1.4)+x0,h);g.clip();const fg=g.createLinearGradient(0,y1,0,y0);fg.addColorStop(0,'rgba(56,189,248,.45)');fg.addColorStop(1,'rgba(56,189,248,0)');g.beginPath();g.moveTo(x0,y0);pts.forEach(q=>g.lineTo(q[0],q[1]));g.lineTo(x1,y0);g.fillStyle=fg;g.fill();
+ g.beginPath();pts.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.strokeStyle='#38bdf8';g.lineWidth=5;g.shadowColor='#38bdf8';g.shadowBlur=18;g.stroke();g.shadowBlur=0;pts.forEach(q=>{g.fillStyle='#fff';g.beginPath();g.arc(q[0],q[1],6,0,7);g.fill()});g.restore();
+ const m=CS&&CS.n.match(/[\d০-৯][\d০-৯,.]*/);if(m){const bn=/[০-৯]/.test(m[0]),v=parseFloat(m[0].replace(/[০-৯]/g,d=>'০১২৩৪৫৬৭৮৯'.indexOf(d)).replace(/,/g,''));let t=String(Math.round(v*ez(p*1.6)));if(v>=1900&&v<=2100)t=String(Math.round(1900+(v-1900)*ez(p*1.6)));if(bn)t=t.replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);g.font=`700 120px ${F}`;g.textAlign='center';g.textBaseline='middle';g.fillStyle='#fbbf24';g.shadowColor='#f59e0b';g.shadowBlur=30;g.fillText(t,w/2,h*.28);g.shadowBlur=0}
+ for(let i=0;i<Math.round(30*k);i++)gl(g,r(i)*w,(r(i+3)*h+l*20*(1+r(i)))%h,6,'125,200,255',.4)};
+SC.history=(g,w,h,p,l,cx,k)=>{sky(g,w,h,'#2e2214','#8a6a3a','#d9b57a');gl(g,w*.5-cx*.1,h*.42,w*.6,'255,225,170',.5);hill(g,w,h,h*.55,20,.007,2,'#5c4326',-cx*.2);hill(g,w,h,h*.62,26,.01,4,'#3a2a17',-cx*.5);
+ for(let f=0;f<3;f++){const x=w*(.2+f*.3)-cx*.8,y=h*.5;g.strokeStyle='#1a120a';g.lineWidth=5;g.beginPath();g.moveTo(x,y+h*.35);g.lineTo(x,y);g.stroke();g.fillStyle='#2a1b0e';g.beginPath();g.moveTo(x,y);for(let t=0;t<=1.01;t+=.1)g.lineTo(x+t*90,y+Math.sin(l*5+t*6+f)*8*t);for(let t=1;t>=-.01;t-=.1)g.lineTo(x+t*90,y+50+Math.sin(l*5+t*6+f)*8*t);g.fill()}
+ const gy=h*.9;g.fillStyle='#120b05';g.fillRect(-50,gy,w+100,h);
+ for(let i=0;i<Math.round(16*Math.max(.5,k));i++){const x=((i*70+l*55+r(i)*40)%(w+160))-80-cx*1.3,sw=Math.sin(l*8+i)*.5;g.save();g.translate(x,gy+Math.sin(l*8+i)*3);g.fillStyle='#120b05';g.beginPath();g.arc(0,-92,10,0,7);g.fill();g.fillRect(-9,-82,18,44);[-1,1].forEach(d=>{g.save();g.translate(d*4,-40);g.rotate(sw*d);g.fillRect(-4,0,8,40);g.restore()});g.restore()}
+ const fr=Math.floor(l*24);for(let i=0;i<110;i++){g.fillStyle=`rgba(255,240,210,${.15+.25*r(i+9)})`;g.fillRect(r(i+fr*13)*w,r(i*3+fr*7)*h,2,2)}
+ g.fillStyle='rgba(255,240,200,.35)';for(let i=0;i<3;i++)if(r(i+Math.floor(l*12)*5)>.6)g.fillRect(r(i*7+Math.floor(l*12))*w,0,1.5,h);
+ g.fillStyle=`rgba(255,230,180,${.04+.05*Math.sin(l*40)})`;g.fillRect(0,0,w,h);g.fillStyle='#000';g.fillRect(-50,-10,w+100,h*.07);g.fillRect(-50,h*.93,w+100,h*.1)};
+const T3={rd:null,sw:0,sh:0,
+init(){if(this.rd)return true;if(!window.THREE)return false;try{const T=THREE,rd=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true}),sc=new T.Scene();sc.background=new T.Color(0x24344f);sc.fog=new T.FogExp2(0x24344f,.02);
+ const gm=new T.PlaneGeometry(140,140,80,80);gm.rotateX(-Math.PI/2);const ps=gm.attributes.position,col=[];for(let i=0;i<ps.count;i++){const x=ps.getX(i),z=ps.getZ(i),y=Math.sin(x*.12)*3.5+Math.cos(z*.1)*3+Math.sin(x*.35+z*.25)*.9;ps.setY(i,y);const c=new T.Color().setHSL(y>3?.09:.3,.5,.22+y*.035);col.push(c.r,c.g,c.b)}
+ gm.setAttribute('color',new T.Float32BufferAttribute(col,3));gm.computeVertexNormals();sc.add(new T.Mesh(gm,new T.MeshLambertMaterial({vertexColors:true,flatShading:true})));
+ const wm=new T.Mesh(new T.PlaneGeometry(140,140),new T.MeshLambertMaterial({color:0x2a74b8,transparent:true,opacity:.7}));wm.rotation.x=-Math.PI/2;wm.position.y=-.2;sc.add(wm);
+ const sun=new T.DirectionalLight(0xffc88a,1.3);sun.position.set(-25,18,-12);sc.add(sun);sc.add(new T.AmbientLight(0x7090b0,.8));
+ const pg=new T.BufferGeometry(),pp=[];for(let i=0;i<260;i++)pp.push((r(i)-.5)*80,2+r(i+9)*14,(r(i+4)-.5)*80);pg.setAttribute('position',new T.Float32BufferAttribute(pp,3));const pt=new T.Points(pg,new T.PointsMaterial({color:0xffdd99,size:.35,transparent:true,opacity:.8}));sc.add(pt);
+ this.rd=rd;this.sc=sc;this.cm=new T.PerspectiveCamera(60,1,.1,200);this.wm=wm;this.pt=pt;return true}catch(e){this.rd=null;return false}},
+draw(g,w,h,p,l,k){if(!this.init()){SC.aerial(g,w,h,p,l,0,k);return}const W=Math.round(w*.6),H=Math.round(h*.6);if(W!=this.sw||H!=this.sh){this.rd.setSize(W,H,false);this.sw=W;this.sh=H}
+ const c=this.cm,z=50-p*70;c.aspect=w/h;c.updateProjectionMatrix();c.position.set(Math.sin(l*.4)*8,9+Math.sin(l*.6)*1.2,z);c.lookAt(Math.sin(l*.3)*6,3,z-25);this.wm.position.y=-.2+Math.sin(l*1.2)*.12;this.pt.rotation.y=l*.05;this.pt.position.y=Math.sin(l)*.5;this.rd.render(this.sc,c);g.drawImage(this.rd.domElement,0,0,w,h)}};
+SC.threed=(g,w,h,p,l,cx,k)=>T3.draw(g,w,h,p,l,k);
+const Prov={cfg:()=>({img:$('pimg').value.trim(),vid:$('pvid').value.trim(),key:$('pkey').value.trim()}),
+async scene(s){const c=this.cfg(),tpl=c.vid||c.img;if(!tpl)return null;const[W,H]={'9:16':[576,1024],'16:9':[1024,576],'1:1':[768,768]}[S.asp];
+ const url=tpl.replace('{prompt}',encodeURIComponent(s.prompt||s.n)).replace('{w}',W).replace('{h}',H);let rs;try{rs=await fetch(url,c.key?{headers:{Authorization:'Bearer '+c.key}}:{})}catch(e){throw new Error('network or CORS blocked')}
+ if(!rs.ok)throw new Error('HTTP '+rs.status);const b=await rs.blob(),u=URL.createObjectURL(b);
+ if(b.type.startsWith('video')){const v=document.createElement('video');v.src=u;v.muted=true;v.loop=true;v.playsInline=true;await new Promise((a,z)=>{v.onloadeddata=a;v.onerror=()=>z(new Error('bad video'))});return{el:v,ok:true,kind:'video'}}
+ if(b.type.startsWith('image')){const i=new Image();i.src=u;await i.decode();return{el:i,ok:true,kind:'image'}}throw new Error('unexpected content type '+(b.type||'unknown'))}};
+function syncVoice(){const b=B.v,L=(O.v.t1>O.v.t0?O.v.t1:b.duration)-O.v.t0,d=b.getChannelData(0),sr=b.sampleRate,hop=Math.floor(sr*.05),rms=[];
+ for(let i=Math.floor(O.v.t0*sr);i+hop<d.length&&rms.length*.05<L;i+=hop){let q=0;for(let j=0;j<hop;j+=4)q+=d[i+j]*d[i+j];rms.push(q/(hop/4))}
+ let mx=0;rms.forEach(v=>{if(v>mx)mx=v});const th=mx*.01,sil=[];let a=-1;rms.forEach((v,i)=>{if(v<th){if(a<0)a=i}else{if(a>=0&&i-a>=6)sil.push((a+i)/2*.05);a=-1}});
+ const w=S.sc.map(s=>Math.max(8,s.n.length)),sm=w.reduce((x,y)=>x+y),cuts=[];let acc=0,prev=0;
+ for(let i=0;i<S.sc.length-1;i++){acc+=w[i]/sm*L;let best=acc,bd=1.3;sil.forEach(t=>{const dd=Math.abs(t-acc);if(dd<bd&&t>prev+1.5){bd=dd;best=t}});cuts.push(best);prev=best}
+ cuts.push(L);prev=0;S.sc.forEach((s,i)=>{s.d=Math.max(1.5,+(cuts[i]-prev).toFixed(2));prev=cuts[i]});S.sc[0].d+=O.v.off;return sil.length}
+const STG=['Analyze script','Generate storyboard','Generate scene visuals','Animate all scenes','Generate / import voice','Add music & sound effects','Synchronize everything','Preview complete video','Export final video'];
+const stgInit=()=>{$('stg').innerHTML=STG.map((s,i)=>`<li id="st${i}">${s}</li>`).join('')},tick=()=>new Promise(f=>setTimeout(f,30));
+function setS(i,st,m=''){$('st'+i).textContent=({run:'⏳ ',ok:'✅ ',warn:'⚠️ ',err:'❌ '}[st])+STG[i]+(m?' — '+m:'')}
+function renderSB(){$('sb').innerHTML=S.sc.map((s,i)=>`<div class="n">${i+1}. <b>${STY[s.p]?STY[s.p][0]:s.p}</b> · ${s.d}s · ${s.desc||''}</div>`).join('')}
+async function produce(){const txt=$('script').value.trim();if(!txt)return alert('Paste a script first');stop();$('go').disabled=true;stgInit();let i=0;
+ try{
+ setS(0,'run');await tick();const A=analyze(txt);if(!A.length)throw new Error('No scenes found');setS(0,'ok',`${A.length} scenes, ${Object.keys(CH).length} characters/roles`);
+ i=1;setS(1,'run');await tick();S.sc=A;S.sel=0;cur=1;rS();renderSB();setS(1,'ok',`total ${tot().toFixed(1)} s`);
+ i=2;const c=Prov.cfg();if(c.img||c.vid){let ok=0,bad='';for(let k=0;k<S.sc.length;k++){setS(2,'run',`provider ${k+1}/${S.sc.length}`);try{const m=await Prov.scene(S.sc[k]);if(m){S.sc[k].ext=m;ok++}}catch(e){bad=e.message}}setS(2,ok?'ok':'warn',`${ok}/${S.sc.length} from provider`+(bad?` (last error: ${bad})`:''))}else setS(2,'ok','local templates: '+[...new Set(S.sc.map(s=>STY[s.p][0]))].join(', '));
+ i=3;setS(3,'run');await tick();if(S.sc.some(s=>s.p=='threed')&&!T3.init())setS(3,'warn','Three.js unavailable (offline?), 2D fallback used');else setS(3,'ok','camera, parallax, characters, FX ready');thumbs();
+ i=4;const vm=$('vmode').value;if(vm=='none')setS(4,'ok','no voice (selected)');else if(B.v)setS(4,'ok','voice file loaded');else setS(4,'warn','no voice file yet: add one on the Audio tab, then press START again');
+ i=5;setS(5,'ok','synth music + whoosh SFX (or your uploaded files)');
+ i=6;setS(6,'run');await tick();if(B.v&&vm!='none'){const n=syncVoice();rS();setS(6,'ok',`scenes aligned to voice (${n} pauses found)`)}else setS(6,'ok','durations from reading speed');
+ i=7;setS(7,'ok','plays live while exporting, or press ▶');draw(1);
+ i=8;if($('autoexp').checked){setS(8,'run','recording in real time…');expDone=()=>{setS(8,'ok','finished: download is on the Export tab');$('go').disabled=false;tab(3,document.querySelectorAll('nav button')[4])};await doExp();if(!exp){setS(8,'err',$('err').textContent||'export did not start');$('go').disabled=false;expDone=null}}else{setS(8,'ok','skipped: use the Export tab');$('go').disabled=false}
+ }catch(e){setS(i,'err',e.message);$('go').disabled=false}}
+function speakPrev(){const ss=window.speechSynthesis;if(!ss)return alert('Speech synthesis not available');if(ss.speaking){ss.cancel();return}const en=$('sublang').value=='en',v=ss.getVoices().find(x=>x.name==$('dvoice').value);
+ S.sc.forEach(s=>{const e=en&&s.en,u=new SpeechSynthesisUtterance(e?s.en:s.n);u.lang=e?'en-US':'bn-BD';if(v)u.voice=v;ss.speak(u)})}
+function loadVoices(){if(!window.speechSynthesis)return;$('dvoice').innerHTML='<option value="">Default device voice</option>'+speechSynthesis.getVoices().map(v=>`<option>${v.name}</option>`).join('')}
+if(window.speechSynthesis)speechSynthesis.onvoiceschanged=loadVoices;loadVoices();
+demo();stgInit();
+</script></body></html>
